@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OncoAI - المنظومة السريرية الشاملة للأورام والبروتوكولات</title>
+    <style>
+        :root {
+            --bg: #0b1120;
+            --card-bg: #131d31;
+            --border: #1e293b;
+            --primary: #0ea5e9;
+            --primary-dark: #0284c7;
+            --gold: #f59e0b;
+            --emerald: #10b981;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); margin: 0; padding: 20px 10px; }
+        .container { max-width: 1050px; margin: 0 auto; }
+
+        .app-header {
+            text-align: center;
+            padding: 24px;
+            background: linear-gradient(135deg, #1e1b4b, #0f172a);
+            border-radius: 18px;
+            border: 1px solid #312e81;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            margin-bottom: 22px;
+        }
+        .app-header h1 { margin: 0; font-size: 26px; color: #ffffff; }
+        .app-header p { margin: 8px 0 0; color: var(--text-dim); font-size: 14px; }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 22px;
+            margin-bottom: 22px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 15px;
+            border-bottom: 2px solid #1e293b;
+            padding-bottom: 8px;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px; }
+        /* إجبار كل خلية على البقاء داخل حدودها ومنع التمدد */
+.form-group { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 5px; 
+    min-width: 0; /* خاصية حاسمة تمنع الخلية من اختراق حدود الـ Grid */
+}
+
+.form-group select, .form-group input {
+    width: 100%; /* ضمان عدم تجاوز الإطار */
+    box-sizing: border-box;
+    text-overflow: ellipsis; /* إضافة نقاط (...) إذا كان النص طويلاً داخل القائمة */
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #ffffff;
+    padding: 10px 12px;
+    border-radius: 9px;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+/* توزيع المعايير الأربعة على صفين (2 في الأعلى و 2 في الأسفل) لمنح النصوص مساحة مريحة */
+.grid-4 { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 14px; 
+    margin-bottom: 15px; 
+}
+
+@media (max-width: 768px) {
+    .grid-4 { grid-template-columns: 1fr; }
+}
+        /* صندوق الطوارئ */
+        .emergency-grid {
+            background: #450a0a22;
+            border: 1.5px solid #7f1d1d;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 10px;
+        }
+        .emergency-grid-title { color: #f87171; font-weight: 800; font-size: 14px; margin-bottom: 10px; }
+        .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #fecaca; margin-bottom: 8px; cursor: pointer; }
+        .checkbox-item input { width: 16px; height: 16px; accent-color: var(--danger); cursor: pointer; }
+
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.35);
+            transition: all 0.2s;
+            margin-top: 15px;
+        }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(2, 132, 199, 0.5); }
+
+        #resultsArea { display: none; }
+        
+        /* بانر الطوارئ الحرج */
+        .urgent-alert-box {
+            background: linear-gradient(135deg, #7f1d1d, #991b1b);
+            border: 2px solid #ef4444;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.35);
+            animation: pulse-red 2s infinite;
+        }
+        @keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.85; } 100% { opacity: 1; } }
+
+        .metrics-banner {
+            display: flex;
+            justify-content: space-around;
+            background: #1e293b;
+            padding: 18px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            border: 1px solid #334155;
+        }
+        .metric-col { text-align: center; }
+        .metric-num { font-size: 26px; font-weight: 900; }
+        .metric-lbl { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+        .progress-bar-wrap {
+            height: 14px;
+            background: #334155;
+            border-radius: 7px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444);
+            border-radius: 7px;
+            transition: width 0.8s ease;
+        }
+
+        .protocol-card {
+            background: #172554;
+            border: 1.5px solid #1d4ed8;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        .protocol-title { font-size: 18px; font-weight: 800; color: #60a5fa; margin-bottom: 8px; }
+
+        .prevention-card {
+            background: #064e3b33;
+            border: 1.5px solid #059669;
+            border-radius: 14px;
+            padding: 18px;
+        }
+        .error-alert { background: #ef444422; border: 1px solid #ef4444; color: #f87171; padding: 12px; border-radius: 10px; text-align: center; display: none; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="app-header">
+        <h1>🎗️ OncoAI - المنظومة السريرية الشاملة لتشخيص وعلاج الأورام</h1>
+        <p>محاكاة ذكية لجميع أنواع السرطانات وتقدير العبء الورمي المئوي بالجسم وصرف البروتوكولات الكيماوية والطارئة</p>
+    </div>
+
+    <div class="card">
+        <div class="section-title">📌 1. اختيار نوع الورم والدلالات الحيوية (ربط ديناميكي)</div>
+        <div class="grid-2">
+            <div class="form-group">
+                <label>نوع السرطان وموضعه التشريحي</label>
+                <select id="cancerSelect" onchange="onCancerChanged()">
+                    <!-- الجهاز الهضمي -->
+                    <optgroup label="أورام الجهاز الهضمي والملحقات">
+                        <option value="colon">سرطان القولون والمستقيم (Colorectal)</option>
+                        <option value="gastric">سرطان المعدة الغدي (Gastric)</option>
+                        <option value="pancreatic">سرطان البنكرياس (Pancreatic)</option>
+                        <option value="liver">سرطان الكبد الأولي (HCC)</option>
+                        <option value="esophagus">سرطان المريء (Esophageal)</option>
+                    </optgroup>
+                    <!-- التنفسي -->
+                    <optgroup label="أورام الرئة والقفص الصدري">
+                        <option value="lung_nsclc" selected>سرطان الرئة غير صغير الخلايا (NSCLC)</option>
+                        <option value="lung_sclc">سرطان الرئة صغير الخلايا (SCLC - الشديد)</option>
+                    </optgroup>
+                    <!-- الثدي والنساء -->
+                    <optgroup label="أورام الثدي والجهاز التناسلي الأنثوي">
+                        <option value="breast_hr">سرطان الثدي الهرموني (ER+/PR+)</option>
+                        <option value="breast_her2">سرطان الثدي الإيجابي لـ HER2+</option>
+                        <option value="breast_tnbc">سرطان الثدي ثلاثي السلبية (TNBC)</option>
+                        <option value="ovarian">سرطان المبيض (Ovarian)</option>
+                        <option value="cervical">سرطان عنق الرحم (Cervical)</option>
+                    </optgroup>
+                    <!-- البولي والذكورة -->
+                    <optgroup label="أورام الجهاز البولي والتناسلي الذكري">
+                        <option value="prostate">سرطان البروستاتا الغدي (Prostate)</option>
+                        <option value="bladder">سرطان المثانة البولية (Bladder)</option>
+                        <option value="kidney">سرطان الخلايا الكلوية (RCC)</option>
+                        <option value="testicular">سرطان الخصية الجرثومي (Testicular)</option>
+                    </optgroup>
+                    <!-- الدم واللمف -->
+                    <optgroup label="سرطانات الدم ونخاع العظم والليمفوما">
+                        <option value="aml">ابيضاض الدم النقوي الحاد (AML)</option>
+                        <option value="cml">ابيضاض الدم النقوي المزمن (CML)</option>
+                        <option value="hodgkin">ليمفوما هودجكين (Hodgkin)</option>
+                        <option value="myeloma">الورم النقوي المتعدد (Myeloma)</option>
+                    </optgroup>
+                    <!-- الجلد والدماغ والعظام -->
+                    <optgroup label="الجلد والأنسجة العصبية والعظمية">
+                        <option value="melanoma">الميلانوما الخبيثة بالجلد (Melanoma)</option>
+                        <option value="glioblastoma">الورم الأرومي الدبقي بالدماغ (GBM)</option>
+                        <option value="osteosarcoma">الساركوما العظمية (Osteosarcoma)</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label id="markerLabel">تحليل الواسم الورمي النوعي</label>
+                <input type="number" id="markerInput" value="12.5" step="0.1">
+            </div>
+        </div>
+
+        <div class="section-title" style="margin-top: 15px;">📌 2. معايير التدريج السريري العالمي (TNM Classification) والحالة الوظيفية</div>
+        <div class="grid-4">
+            <div class="form-group">
+                <label>حجم وتغلغل الورم (T)</label>
+                <select id="tStage">
+                    <option value="1">T1: ورم صغير محدد (أقل من 2 سم)</option>
+                    <option value="2" selected>T2: ورم متوسط متغلغل محلياً</option>
+                    <option value="3">T3: ورم كبير مخترق للأنسجة المجاورة</option>
+                    <option value="4">T4: ورم ضخم غازٍ للأعضاء والشرايين الحيوية</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>العقد اللمفاوية (N)</label>
+                <select id="nStage">
+                    <option value="0">N0: خالية تماماً من الخلايا الخبيثة</option>
+                    <option value="1" selected>N1: إصابة العقد المحيطية القريبة (1-3 عقد)</option>
+                    <option value="2">N2: إصابة عقد لمفاوية إقليمية متعددة</option>
+                    <option value="3">N3: انتشار واسع للعقد البعيدة أو فوق الترقوة</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>النقائل البعيدة (M)</label>
+                <select id="mStage">
+                    <option value="0" selected>M0: لا يوجد انتشار لأعضاء بعيدة</option>
+                    <option value="1">M1: انتشار بعيد (كبد، رئة، عظام، دماغ)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>مقياس النشاط (ECOG Score)</label>
+                <select id="ecogScore">
+                    <option value="0">0: نشاط كامل بدون أي عجز</option>
+                    <option value="1" selected>1: قادر على الحركة مع جهد خفيف</option>
+                    <option value="2">2: يلازم الفراش أقل من 50% من اليوم</option>
+                    <option value="3">3: عجز شديد وملازمة الفراش معظم الوقت</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- رادار طوارئ الأورام -->
+        <div class="emergency-grid">
+            <div class="emergency-grid-title">⚠️ رادار طوارئ الأورام الفورية (Oncologic Emergency Screening)</div>
+            <div class="grid-2">
+                <label class="checkbox-item">
+                    <input type="checkbox" id="chkNeutropenia">
+                    <span>حمى مفاجئة (38.3°C فما فوق) مع تدني كريات الدم البيضاء / بعد كيماوي حديث</span>
+                </label>
+                <label class="checkbox-item">
+                    <input type="checkbox" id="chkSpinal">
+                    <span>ألم ظهر حاد وجديد مصحوب بضعف عضلي بالأطراف أو خدر (اشتباه انضغاط النخاع)</span>
+                </label>
+                <label class="checkbox-item">
+                    <input type="checkbox" id="chkSVC">
+                    <span>انتفاخ بالوجه والرقبة مع زرقة وصعوبة تنفس وضخامة أوردة الصدر (متلازمة SVC)</span>
+                </label>
+                <label class="checkbox-item">
+                    <input type="checkbox" id="chkHypercalcemia">
+                    <span>إعياء شديد وعطش مفرط وتخليط ذهني وغثيان متواصل (اشتباه فرط كالسيوم حاد)</span>
+                </label>
+            </div>
+        </div>
+
+        <button class="btn-submit" onclick="runOncologySimulation()">⚡ تحليل الحالة بالذكاء الاصطناعي وصرف البروتوكول العلاجي</button>
+    </div>
+
+    <div id="errorAlert" class="error-alert">تعذر الاتصال بالسيرفر! تأكد من تشغيل `uvicorn main:app --reload` في الخلفية.</div>
+
+    <!-- مخرجات الذكاء الاصطناعي -->
+    <div id="resultsArea">
+        <!-- بانر الطوارئ -->
+        <div id="urgentAlert" class="urgent-alert-box" style="display: none;">
+            <div style="font-size: 20px; font-weight: 900; margin-bottom: 8px;" id="urgentTitle">--</div>
+            <div style="font-size: 14px; line-height: 1.6;" id="urgentSolution">--</div>
+        </div>
+
+        <!-- المقاييس الرئيسية والعبء الورمي -->
+        <div class="metrics-banner">
+            <div class="metric-col">
+                <div id="outStage" class="metric-num" style="color: var(--gold);">المرحلة III</div>
+                <div class="metric-lbl">التدريج السريري (TNM Stage)</div>
+            </div>
+            <div class="metric-col" style="flex: 1.5; padding: 0 20px;">
+                <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 18px;">
+                    <span>العبء الورمي التقديري بالجسم:</span>
+                    <span id="outBurden" style="color: #f87171;">65.4%</span>
+                </div>
+                <div class="progress-bar-wrap">
+                    <div id="burdenFill" class="progress-bar-fill" style="width: 65%;"></div>
+                </div>
+                <div id="outMarkerDetail" style="font-size: 11px; color: var(--text-dim); margin-top: 5px;">--</div>
+            </div>
+        </div>
+
+        <!-- البروتوكول الكيماوي والدوائي -->
+        <div class="protocol-card">
+            <div class="protocol-title">💉 بروتوكول العلاج الطبي المقترح (Chemotherapy / Immunotherapy Protocol):</div>
+            <div id="outProtocol" style="font-size: 15px; font-weight: 700; color: #ffffff; line-height: 1.6;">--</div>
+        </div>
+
+        <!-- استراتيجية الوقاية والمتابعة -->
+        <div class="prevention-card">
+            <div style="font-weight: 800; color: #34d399; font-size: 15px; margin-bottom: 5px;">🛡️ إرشادات الوقاية والمسح الدوري وتفادي الانتكاس:</div>
+            <div id="outPrevention" style="font-size: 13.5px; color: #e2e8f0; line-height: 1.5;">--</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // القاموس المحلي لتحديث الحقول في الواجهة
+    const oncologyMetadata = {
+        colon: { label: "تحليل المستضد الجنيني (CEA ng/mL)", defaultVal: 18.5 },
+        gastric: { label: "تحليل CA 72-4 / CEA (U/mL)", defaultVal: 15.0 },
+        pancreatic: { label: "تحليل المستضد الكربوهيدراتي (CA 19-9 U/mL)", defaultVal: 180.0 },
+        liver: { label: "تحليل ألفا فيتو بروتين (AFP ng/mL)", defaultVal: 85.0 },
+        esophagus: { label: "تحليل المستضد الجنيني (CEA ng/mL)", defaultVal: 8.5 },
+        lung_nsclc: { label: "تحليل الواسمات CEA / CYFRA 21-1 (ng/mL)", defaultVal: 12.0 },
+        lung_sclc: { label: "إنزيم الإينولاز العصبي النوعي (NSE ng/mL)", defaultVal: 45.0 },
+        breast_hr: { label: "تحليل مستضد الثدي (CA 15-3 U/mL)", defaultVal: 48.0 },
+        breast_her2: { label: "تحليل مستضد الثدي (CA 15-3 U/mL)", defaultVal: 55.0 },
+        breast_tnbc: { label: "تحليل مستضد الثدي (CA 15-3 U/mL)", defaultVal: 42.0 },
+        ovarian: { label: "واسم أورام المبيض (CA-125 U/mL)", defaultVal: 220.0 },
+        cervical: { label: "واسم سرطان الخلايا الحرشفية (SCC-Ag ng/mL)", defaultVal: 4.8 },
+        prostate: { label: "المستضد النوعي للبروستاتا (Total PSA ng/mL)", defaultVal: 32.0 },
+        bladder: { label: "تحليل الخلايا والمستضد البولي (NMP22 U/mL)", defaultVal: 28.0 },
+        kidney: { label: "إنزيم نازعة هيدروجين اللاكتات (LDH U/L)", defaultVal: 380.0 },
+        testicular: { label: "ألفا فيتو بروتين و Beta-hCG (IU/L)", defaultVal: 40.0 },
+        aml: { label: "نسبة الخلايا الأرومية الخبيثة (Blast %)", defaultVal: 35.0 },
+        cml: { label: "النسبة الجينية لصبغي فيلادلفيا (BCR-ABL1 %)", defaultVal: 12.0 },
+        hodgkin: { label: "معدل الالتهاب والإنزيم (LDH U/L)", defaultVal: 410.0 },
+        myeloma: { label: "تركيز البروتين أحادي النسيلة (M-Protein g/dL)", defaultVal: 3.8 },
+        melanoma: { label: "مستوى إنزيم LDH وعمق بريسلو (U/L)", defaultVal: 310.0 },
+        glioblastoma: { label: "مؤشر التغلغل المقطعي (MRI Enhancement Score)", defaultVal: 10.0 },
+        osteosarcoma: { label: "إنزيم الفوسفاتاز القلوية (ALP U/L)", defaultVal: 450.0 }
+    };
+
+    function onCancerChanged() {
+        const key = document.getElementById("cancerSelect").value;
+        const meta = oncologyMetadata[key];
+        if (meta) {
+            document.getElementById("markerLabel").innerText = meta.label;
+            document.getElementById("markerInput").value = meta.defaultVal;
+        }
+    }
+
+    // تعيين القيمة الابتدائية
+    onCancerChanged();
+
+    async function runOncologySimulation() {
+        const errorAlert = document.getElementById('errorAlert');
+        const resultsArea = document.getElementById('resultsArea');
+        errorAlert.style.display = 'none';
+
+        const payload = {
+            cancer_key: document.getElementById('cancerSelect').value,
+            t_stage: parseInt(document.getElementById('tStage').value),
+            n_stage: parseInt(document.getElementById('nStage').value),
+            m_stage: parseInt(document.getElementById('mStage').value),
+            marker_value: parseFloat(document.getElementById('markerInput').value),
+            performance_score: parseInt(document.getElementById('ecogScore').value),
+            age: 55,
+            has_fever_neutropenia: document.getElementById('chkNeutropenia').checked ? 1 : 0,
+            has_cord_compression: document.getElementById('chkSpinal').checked ? 1 : 0,
+            has_svc_symptoms: document.getElementById('chkSVC').checked ? 1 : 0,
+            has_hypercalcemia: document.getElementById('chkHypercalcemia').checked ? 1 : 0
+        };
+
+        try {
+            const res = await fetch('/evaluate_oncology', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+
+            // عرض تنبيه الطوارئ في حال تفعيله
+            const urgentAlert = document.getElementById('urgentAlert');
+            if (data.emergency_triggered) {
+                document.getElementById('urgentTitle').innerText = data.emergency_title;
+                document.getElementById('urgentSolution').innerText = data.emergency_solution;
+                urgentAlert.style.display = 'block';
+            } else {
+                urgentAlert.style.display = 'none';
+            }
+
+            // تحديث مؤشرات المرحلة والعبء الورمي
+            document.getElementById('outStage').innerText = data.stage;
+            document.getElementById('outBurden').innerText = data.tumor_burden_percent + '%';
+            document.getElementById('burdenFill').style.width = data.tumor_burden_percent + '%';
+            document.getElementById('outMarkerDetail').innerText = data.marker_analysis;
+
+            // تحديث البروتوكول والوقاية
+            document.getElementById('outProtocol').innerText = data.treatment_protocol;
+            document.getElementById('outPrevention').innerText = data.prevention_strategy;
+
+            resultsArea.style.display = 'block';
+            resultsArea.scrollIntoView({ behavior: 'smooth' });
+
+        } catch (err) {
+            errorAlert.style.display = 'block';
+            resultsArea.style.display = 'none';
+        }
+    }
+</script>
+
+</body>
+</html>
